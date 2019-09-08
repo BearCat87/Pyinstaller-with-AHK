@@ -1,0 +1,96 @@
+#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+; #Warn  ; Enable warnings to assist with detecting common errors.
+SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
+SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
+#SingleInstance, Force
+if not A_IsAdmin
+	Run *RunAs "%A_ScriptFullPath%" ; (A_AhkPath is usually optional if the script has the .ahk extension.) You would typically check  first.
+
+
+Gui, Add, Text,x10 y10 w150 h30														,One File bundled or NOT
+Gui, Add, Dropdownlist, x+ yp wp h100 	vSelected_Onefile choose1 AltSubmit 		,One File Bundle|NOT One FIle
+
+Gui, Add, Text,x10 y+5 wp h30														,Do not provide a console
+Gui, Add, Dropdownlist,x+ yp wp h100	vSelected_Windowed choose1 AltSubmit		,No Console|NOT
+
+Gui, Add, Text,x10 y+10 wp hp 														,Select ICON Path
+Gui, Add, Button,x+ yp wp hp			gIconSelector								,ICON Selection
+Gui, Add, Text,x10 y+5 w300 hp 			vSelected_Icon								,Show ICON path
+
+Gui, Add, Text,x10 y+10 w150 hp 													,Select Python Path
+Gui, Add, Button,x+ yp wp hp			gPySelector 								,Python Selection
+Gui, Add, Text,x10 y+5 w300 hp			vSelected_Py								,Show Python path
+
+Gui, Add, Button,x10 y+5 wp h30			gExcutePyInstaller 							,Python to EXE file
+Gui, Add, Button,x10 y+5 wp h30			gGuiclose		 							,Exit
+
+Gui, Show, AutoSize, PyInstaller with AHK(by BearCat87)
+
+IniRead, Selected_Icon, Pyinstaller_Option.ini, Options, Selected_Icon
+GuiControl,,Selected_Icon,%Selected_Icon%
+
+IniRead, Selected_Py, Pyinstaller_Option.ini, Options, Selected_Py
+GuiControl,,Selected_Py,%Selected_Py%
+
+return
+
+GuiClose:
+ExitApp
+
+IconSelector:
+Gui, Submit, NoHide
+FileSelectFile,IconFile,, %A_WorkingDir%,Icon Selector., Icon File(*.ic*)
+if Errorlevel = 0
+	GuiControl,, Selected_Icon,%IconFile%
+if Errorlevel = 1
+	GuiControl,,Selected_Icon,
+return
+
+PySelector:
+Gui, Submit, NoHide
+FileSelectFile,PyFile,, %A_WorkingDir%,Python Selector., Python File(*.py)
+if Errorlevel = 0
+	GuiControl,,Selected_Py,%PyFile%
+if Errorlevel = 1
+	GuiControl,,Selected_Py,
+
+return
+
+ExcutePyInstaller:
+Gui, Submit, NoHide
+
+Iniwrite, %Selected_Icon%, Pyinstaller_Option.ini, Options, Selected_Icon
+Iniwrite, %Selected_Py%, Pyinstaller_Option.ini, Options, Selected_Py
+
+GuicontrolGet,Selected_Onefile,,Selected_Onefile
+if (Selected_Onefile = 1)
+	Onefile := "--onefile"
+
+GuicontrolGet,Selected_Windowed,,Selected_Windowed
+if (Selected_Windowed = 1)
+	windowed := "--windowed"
+
+GuicontrolGet,Selected_Icon,,Selected_Icon
+if (Selected_Icon = "No Icon")
+	Icon := 
+else if (Selected_Icon = "Show ICON path")
+	Icon := 
+else if (Selected_Icon = "ERROR")
+	Icon := 
+else if (Selected_Icon = "")
+	Icon := 
+else
+	Icon := "--icon="Selected_Icon
+
+GuicontrolGet,Selected_Py,,Selected_Py
+SplitPath, Selected_Py,PyFile,PyPath,PyExt,
+If PyPath = 
+{
+	MsgBox, 48, Selection Python file, Please, select python file.
+	return
+}
+PyInstall_Option = %Onefile% %Windowed% %Icon% %PyFile%
+
+Run, %ComSpec% /k cd %PyPath% && pyinstaller.exe %PyInstall_Option%
+
+return
